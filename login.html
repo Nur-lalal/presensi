@@ -112,23 +112,24 @@ document.getElementById("loginForm").addEventListener("submit", function(e){
   errorDiv.innerText = "";
   successLink.classList.add("hidden");
 
-  fetch(API_URL + "?action=verifyLogin", {
-    method: "POST",
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({ email, password })
+fetch(API_URL + "?action=verifyLogin", {
+  method: "POST",
+  headers: { "Content-Type": "text/plain" },
+  body: JSON.stringify({ email, password })
+})
+  .then(res => res.json())
+  .then(result => {
+    if (result.success) {
+      localStorage.setItem("admin_token", result.token);
+      successLink.classList.remove("hidden");
+      errorDiv.innerHTML = "<span class='text-success'>Login berhasil ✔</span>";
+    } else {
+      errorDiv.innerText = result.message;
+    }
   })
-    .then(res => res.json())
-    .then(result => {
-      if (result.success) {
-        successLink.classList.remove("hidden");
-        errorDiv.innerHTML = "<span class='text-success'>Login berhasil ✔</span>";
-      } else {
-        errorDiv.innerText = result.message;
-      }
-    })
-    .catch(() => {
-      errorDiv.innerText = "Terjadi kesalahan sistem!";
-    });
+  .catch(() => {
+    errorDiv.innerText = "Terjadi kesalahan sistem!";
+  });
 });
 </script>
 
