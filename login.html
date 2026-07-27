@@ -82,14 +82,6 @@ body, html { height: 100%; font-size:14px; color:#333; }
 
       <div id="error" class="text-danger text-center mt-3"></div>
 
-      <div id="successLink" class="hidden text-center mt-3">
-        <a href="admin.html">
-          <button class="btn btn-warning w-100">
-            Masuk ke Halaman Admin
-          </button>
-        </a>
-      </div>
-
     </div>
   </div>
 
@@ -121,8 +113,8 @@ fetch(API_URL + "?action=verifyLogin", {
   .then(result => {
     if (result.success) {
       localStorage.setItem("admin_token", result.token);
-      successLink.classList.remove("hidden");
-      errorDiv.innerHTML = "<span class='text-success'>Login berhasil ✔</span>";
+      errorDiv.innerHTML = "<span class='text-success'>Login berhasil, mengarahkan...</span>";
+      window.location.href = "admin.html";
     } else {
       errorDiv.innerText = result.message;
     }
