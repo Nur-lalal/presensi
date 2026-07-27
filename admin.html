@@ -1,1 +1,663 @@
-<h1>test</h1>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+body { 
+  font-family: Arial; 
+  margin:20px; 
+  background:#f4f6f8; 
+  position: relative;
+}
+
+.home-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: #ffffff;
+  border: 2px solid #28a745;
+  color: #28a745;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.home-btn:hover {
+  background: #28a745;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(40,167,69,0.4);
+}
+.home-btn i { font-size: 1.4rem; }
+
+table { width:100%; border-collapse:collapse; margin-top:20px; background:white; }
+th,td { border:1px solid #ddd; padding:8px; }
+th { background:#f2f2f2; }
+
+button {
+  padding: 8px 18px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+button:hover { background-color: #218838; }
+button:active { transform: scale(0.97); }
+
+.highlight-late {
+  background-color: #e6b8b8 !important;
+  font-weight: bold;
+}
+
+.popup{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.4);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+.popup-box{
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  width:320px;
+  text-align:center;
+}
+
+img { max-width:80px; cursor:pointer; }
+.filter { margin-bottom:15px; }
+
+.loading { 
+  position:fixed; 
+  top:0; 
+  left:0; 
+  width:100%; 
+  height:100%; 
+  background:rgba(255,255,255,0.9); 
+  display:none; 
+  align-items:center; 
+  justify-content:center; 
+  z-index: 9998; 
+  flex-direction: column;
+}
+
+.btn {
+  display:inline-block;
+  padding:8px 15px;
+  margin:5px 5px 5px 0;
+  border:none;
+  border-radius:6px;
+  text-decoration:none;
+  color:white;
+  cursor:pointer;
+}
+.btn-green { background:#4CAF50; }
+.btn-green:hover { background:#45a049; }
+.btn-blue { background:#2196F3; }
+.btn-blue:hover { background:#1976D2; }
+.btn-red { background:#f44336; }
+.btn-red:hover { background:#d32f2f; }
+
+@keyframes spin { 100% { transform:rotate(360deg); } }
+
+@media (max-width: 768px) {
+  .home-btn { top: 10px; right: 10px; width: 40px; height: 40px; }
+  body { margin-top: 60px; margin: 15px; }
+
+  .filter { display: flex; flex-direction: column; gap: 10px; }
+  .filter input { width: 100%; box-sizing: border-box; }
+
+  body > div[style*="margin-bottom:15px"] { display: flex; flex-direction: column; gap: 10px; }
+  body > div[style*="margin-bottom:15px"] .btn { width: 100%; text-align: center; }
+
+  table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+</style>
+</head>
+
+<body>
+
+<a href="/index.html" class="home-btn" title="Kembali ke Beranda">
+  <i class="bi bi-house-door-fill"></i>
+</a>
+
+<h2>Admin Dashboard - Data Presensi</h2>
+
+<div style="display:flex; gap:15px; margin-bottom:15px;">
+  <div style="background:white; padding:15px 25px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); border-left:5px solid #28a745;">
+    <div style="font-size:13px; color:#666;">Mahasiswa Aktif</div>
+    <div style="font-size:28px; font-weight:bold; color:#28a745;" id="cardJumlahAktif">-</div>
+  </div>
+  <div style="background:white; padding:15px 25px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); border-left:5px solid #d32f2f;">
+    <div style="font-size:13px; color:#666;">Mahasiswa Nonaktif</div>
+    <div style="font-size:28px; font-weight:bold; color:#d32f2f;" id="cardJumlahNonaktif">-</div>
+  </div>
+</div>
+
+<div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; background:white; padding:12px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+  <button onclick="gantiTanggalCepat(-1)" class="btn btn-blue" style="padding:8px 14px;">
+    <i class="bi bi-chevron-left"></i> Kemarin
+  </button>
+  <button onclick="pilihHariIni()" class="btn btn-green" style="padding:8px 14px;">
+    <i class="bi bi-calendar-check"></i> Hari Ini
+  </button>
+  <button onclick="gantiTanggalCepat(1)" class="btn btn-blue" style="padding:8px 14px;">
+    Besok <i class="bi bi-chevron-right"></i>
+  </button>
+  <input type="date" id="tanggalCepat" onchange="pilihTanggalCepat()" style="margin-left:10px;">
+  <span id="labelTanggalAktif" style="margin-left:auto; font-weight:bold; color:#28a745;"></span>
+</div>
+
+<div class="filter">
+  <input type="text" id="nameFilter" list="listNamaFilter" placeholder="Cari nama..." onkeyup="applyFilter()">
+  <datalist id="listNamaFilter"></datalist>
+
+  <input type="text" id="kampusFilter" list="listKampusFilter" placeholder="Cari kampus..." onkeyup="applyFilter()">
+  <datalist id="listKampusFilter"></datalist>
+
+  <input type="date" id="startDate" onchange="applyFilter()">
+  <input type="date" id="endDate" onchange="applyFilter()">
+</div>
+
+<div style="margin-bottom:15px;">
+  <button onclick="generateReport()" class="btn btn-green">
+    <i class="bi bi-file-earmark-pdf"></i> Generate Laporan
+  </button>
+  <a href="/listnama.html" class="btn btn-blue">
+    <i class="bi bi-people"></i> Kelola List Nama
+  </a>
+  <button onclick="hapusDataTerfilter()" class="btn btn-red">
+    <i class="bi bi-trash"></i> Hapus Data
+  </button>
+  <a href="/login.html" class="btn btn-red">
+    <i class="bi bi-box-arrow-right"></i> Logout
+  </a>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Tanggal</th>
+  <th>Nama</th>
+  <th>NIM</th>
+  <th>Kampus</th>
+  <th>Gender</th>
+  <th>Jenis</th>
+  <th>Jam Masuk</th>
+  <th>Foto Masuk</th>
+  <th>Jam Keluar</th>
+  <th>Foto Keluar</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+<div class="loading" id="loading">
+  <i class="bi bi-arrow-repeat" style="font-size:3rem; color:#28a745; animation:spin 1s linear infinite;"></i>
+  <p style="margin-top:10px;">Loading...</p>
+</div>
+
+<div id="popupDeletePresensi" class="popup">
+  <div class="popup-box">
+    <h3 style="margin-top:0;">Hapus Data Presensi?</h3>
+    <p id="deletePresensiText">Data akan dihapus permanen.</p>
+    <div style="margin-top:20px;">
+      <button id="btnConfirmDeletePresensi" class="btn btn-red">Ya, Hapus</button>
+      <button onclick="tutupDeletePresensi()">Batal</button>
+    </div>
+  </div>
+</div>
+
+<div id="popupInfo" class="popup">
+  <div class="popup-box">
+    <p id="popupInfoText"></p>
+    <button onclick="tutupPopupInfo()">OK</button>
+  </div>
+</div>
+
+<script>
+const API_URL = "AKfycbzXuixBg0SqxgyRrLBwZ-iWhZLzb4qpJmcRrGj8Lpu2Ua-C5pMgpGO2DJrSnwU9xfREzA";
+
+let presensiData = [];
+let filteredData = [];
+let deletePresensiFilter = null;
+
+window.onload = function(){
+  loadData();
+  loadJumlahMahasiswa();
+};
+
+function loadJumlahMahasiswa(){
+  fetch(API_URL + "?action=getListNama")
+    .then(res => res.json())
+    .then(data => {
+      const list = data || [];
+      const aktif = list.filter(x => String(x.status || "").toUpperCase() !== "NONAKTIF").length;
+      const nonaktif = list.filter(x => String(x.status || "").toUpperCase() === "NONAKTIF").length;
+      document.getElementById("cardJumlahAktif").innerText = aktif;
+      document.getElementById("cardJumlahNonaktif").innerText = nonaktif;
+    });
+}
+
+function formatTanggalForInput(date){
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return y+"-"+m+"-"+d;
+}
+
+function terapkanTanggal(date){
+  const tgl = formatTanggalForInput(date);
+  document.getElementById("startDate").value = tgl;
+  document.getElementById("endDate").value = tgl;
+  document.getElementById("tanggalCepat").value = tgl;
+  document.getElementById("labelTanggalAktif").innerText = "Menampilkan: " + tgl;
+  applyFilter();
+}
+
+function gantiTanggalCepat(arahHari){
+  const current = document.getElementById("tanggalCepat").value || formatTanggalForInput(new Date());
+  const date = new Date(current);
+  date.setDate(date.getDate() + arahHari);
+  terapkanTanggal(date);
+}
+
+function pilihHariIni(){ terapkanTanggal(new Date()); }
+
+function pilihTanggalCepat(){
+  const val = document.getElementById("tanggalCepat").value;
+  if(!val) return;
+  terapkanTanggal(new Date(val));
+}
+
+function loadData(){
+  document.getElementById("loading").style.display="flex";
+  fetch(API_URL + "?action=getPresensiData")
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("loading").style.display="none";
+      presensiData = data || [];
+      populateFilters();
+      pilihHariIni();
+    })
+    .catch(err => {
+      document.getElementById("loading").style.display="none";
+      alert("Error ambil data");
+      console.log(err);
+    });
+}
+
+function populateFilters(){
+  const listNama = document.getElementById("listNamaFilter");
+  listNama.innerHTML = "";
+  const uniqueNama = [];
+  const seen = new Set();
+  presensiData.forEach(p => {
+    const nama = (p.Nama || "").trim();
+    if (nama && !seen.has(nama.toLowerCase())) {
+      seen.add(nama.toLowerCase());
+      uniqueNama.push(nama);
+    }
+  });
+  uniqueNama.forEach(nama=>{
+    const opt = document.createElement("option");
+    opt.value = nama;
+    listNama.appendChild(opt);
+  });
+
+  const listKampus = document.getElementById("listKampusFilter");
+  listKampus.innerHTML = "";
+  const uniqueKampus = [...new Set(presensiData.map(p => (p.Kampus || "").trim()).filter(k => k))];
+  uniqueKampus.forEach(kampus=>{
+    const opt = document.createElement("option");
+    opt.value = kampus;
+    listKampus.appendChild(opt);
+  });
+}
+
+function applyFilter(){
+  const name = document.getElementById("nameFilter").value.toLowerCase().trim();
+  const kampus = document.getElementById("kampusFilter").value.toLowerCase().trim();
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+
+  filteredData = presensiData.filter(p=>{
+    let match = true;
+    if(name) match = match && p.Nama && p.Nama.toLowerCase().trim() === name;
+    if(kampus) match = match && p.Kampus && p.Kampus.toLowerCase().trim().includes(kampus);
+    if(start) match = match && new Date(p.Tanggal) >= new Date(start);
+    if(end) match = match && new Date(p.Tanggal) <= new Date(end);
+    return match;
+  });
+
+  filteredData.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
+  renderTable();
+}
+
+function renderTable(){
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+  filteredData.forEach((p,i)=>{
+    const row = document.createElement("tr");
+
+    let jamMasukClass = "";
+    if (p['Jam Masuk']) {
+      const jamParts = String(p['Jam Masuk']).split(':');
+      if (jamParts.length >= 2) {
+        const jam = parseInt(jamParts[0]);
+        const menit = parseInt(jamParts[1]);
+        if (jam > 7 || (jam === 7 && menit > 30)) {
+          jamMasukClass = 'class="highlight-late"';
+        }
+      }
+    }
+
+    const createFotoCell = (fotoUrl) => {
+      if (fotoUrl) {
+        const driveViewUrl = fotoUrl.replace('uc?export=view&id=', 'file/d/') + '/view';
+        return `<img src="${fotoUrl}" alt="Foto" onclick="openFoto('${driveViewUrl}')" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"><a href="${driveViewUrl}" target="_blank" style="display:none;">Lihat Foto</a>`;
+      }
+      return "Tidak ada";
+    };
+
+    row.innerHTML = `
+      <td>${i+1}</td>
+      <td>${p.Tanggal || ''}</td>
+      <td>${p.Nama || ''}</td>
+      <td>${p.NIM || ''}</td>
+      <td>${p.Kampus || ''}</td>
+      <td>${p.Gender || ''}</td>
+      <td>${p.Jenis || '-'}</td>
+      <td ${jamMasukClass}>${p['Jam Masuk'] || ''}</td>
+      <td>${createFotoCell(p['Foto Masuk'])}</td>
+      <td>${p['Jam Keluar'] || ''}</td>
+      <td>${createFotoCell(p['Foto Keluar'])}</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function openFoto(url) { window.open(url, '_blank'); }
+
+function generateReport() {
+  if (filteredData.length === 0) {
+    showPopupInfo("Tidak ada data untuk dicetak.");
+    return;
+  }
+  document.getElementById("loading").style.display = "flex";
+  document.querySelector("#loading p").textContent = "Menyiapkan laporan...";
+
+  fetch(API_URL + "?action=getLogoPresensi")
+    .then(res => res.json())
+    .then(assets => {
+      document.getElementById("loading").style.display = "none";
+      _doGenerateReport(assets);
+    })
+    .catch(() => {
+      document.getElementById("loading").style.display = "none";
+      _doGenerateReport({logo:"", bgTop:"", bgBottom:""});
+    });
+}
+
+function _doGenerateReport(assets) {
+  const nameFilter = document.getElementById("nameFilter").value.trim();
+  const kampusFilter = document.getElementById("kampusFilter").value.trim();
+
+  if (filteredData.length === 0) {
+    showPopupInfo("Tidak ada data untuk dicetak.");
+    return;
+  }
+
+  let filterTitle = "";
+  let detailInfo = "";
+
+  if (nameFilter) {
+    if (filteredData.length > 0) {
+      const p0 = filteredData[0];
+      const nama = nameFilter || "-";
+      const nim = p0.NIM || "-";
+      const kampus = p0.Kampus || "-";
+      const gender = p0.Gender || "-";
+
+      detailInfo = `
+        <div style="margin:10px 0; font-size:12px;">
+          <table style="width:100%; border-collapse:collapse;">
+            <tr>
+              <td style="width:50%; vertical-align:top; border:1px solid white !important;">
+                <table style="border-collapse:collapse;">
+                  <tr><td style="width:90px; border:1px solid white !important;">Nama</td><td style="width:15px; text-align:center; border:1px solid white !important;">:</td><td style="width:150px; border:1px solid white !important;">${nama}</td></tr>
+                  <tr><td style="border:1px solid white !important;">NIM</td><td style="text-align:center; border:1px solid white !important;">:</td><td style="border:1px solid white !important;">${nim}</td></tr>
+                </table>
+              </td>
+              <td style="width:50%; vertical-align:top; border:1px solid white !important;">
+                <table style="border-collapse:collapse; float:right;">
+                  <tr><td style="width:90px; border:1px solid white !important;">Kampus</td><td style="width:15px; text-align:center; border:1px solid white !important;">:</td><td style="width:150px; border:1px solid white !important;">${kampus}</td></tr>
+                  <tr><td style="border:1px solid white !important;">Gender</td><td style="text-align:center; border:1px solid white !important;">:</td><td style="border:1px solid white !important;">${gender}</td></tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+      `;
+    }
+  } else if (kampusFilter) {
+    filterTitle = "Rekap Presensi Kampus : " + kampusFilter;
+  } else {
+    filterTitle = "Rekap Seluruh Data Presensi";
+  }
+
+  let rows = "";
+  filteredData.forEach((p, i) => {
+    const tanggal = p.Tanggal || "";
+    const jamMasuk = p['Jam Masuk'] || "-";
+    const jamKeluar = p['Jam Keluar'] || "-";
+
+    let jamMasukBg = "";
+    if (p['Jam Masuk']) {
+      const parts = String(p['Jam Masuk']).split(":");
+      if (parts.length >= 2) {
+        const jam = parseInt(parts[0]);
+        const menit = parseInt(parts[1]);
+        if (!isNaN(jam) && !isNaN(menit) && (jam > 7 || (jam === 7 && menit > 30))) {
+          jamMasukBg = "#e6b8b8";
+        }
+      }
+    }
+
+    rows += `
+      <tr>
+        <td style="padding:3px;">${i + 1}</td>
+        <td style="padding:3px;">${tanggal}</td>
+        <td style="padding:3px;">${p.Nama || ""}</td>
+        <td style="padding:3px;">${p.Kampus || ""}</td>
+        <td style="padding:0;"><div style="background:${jamMasukBg};padding:3px;">${jamMasuk}</div></td>
+        <td style="padding:3px;">${jamKeluar}</td>
+      </tr>
+    `;
+  });
+
+  const logoHtml = assets.logo ? `<img src="${assets.logo}" style="width:75px; display:block; margin:0 auto 6px auto;">` : "";
+  const bgTopHtml = assets.bgTop ? `<img src="${assets.bgTop}" style="position:fixed;top:0;left:0;width:100px;z-index:-1;">` : "";
+  const bgBottomHtml = assets.bgBottom ? `<img src="${assets.bgBottom}" style="position:fixed;top:0;right:0;width:100px;z-index:-1;transform:scaleY(-1);">` : "";
+
+  const now = new Date();
+  const tglCetak = String(now.getDate()).padStart(2, '0') + "/" + String(now.getMonth() + 1).padStart(2, '0') + "/" + now.getFullYear();
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        @page { margin: 0; }
+        body { margin: 0; font-family: Arial; }
+        table, th, td { border: 1px solid black !important; }
+        table { page-break-inside:auto; }
+        tr { page-break-inside:avoid; page-break-after:auto; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .sig-table, .sig-table td, .sig-table tr { border: none !important; }
+      </style>
+    </head>
+    <body>
+      ${bgTopHtml}
+      ${bgBottomHtml}
+
+      <div style="position:relative; z-index:1; padding:12px 40px 20px 40px;">
+        <div style="text-align:center; margin-bottom:6px;">
+          ${logoHtml}
+          <h2 style="margin:2px 0; font-size:15px;">DAFTAR HADIR</h2>
+          <h3 style="margin:0; font-size:11px; font-weight:normal;">MAHASISWA MAGANG / PKL<br>BAZNAS KOTA YOGYAKARTA</h3>
+        </div>
+
+        <div style="margin:10px 0 6px 0; font-size:12px;">${filterTitle}</div>
+        ${detailInfo}
+
+        <table border="1" style="border-collapse:collapse;width:100%;font-size:12px;">
+          <tr style="background-color:#C8E6C9;">
+            <th style="padding:3px;">No</th>
+            <th style="padding:3px;">Tanggal</th>
+            <th style="padding:3px;">Nama</th>
+            <th style="padding:3px;">Kampus</th>
+            <th style="padding:3px;">Jam Masuk</th>
+            <th style="padding:3px;">Jam Keluar</th>
+          </tr>
+          ${rows}
+        </table>
+
+        <table class="sig-table" style="width:100%; margin-top:30px; font-size:12px;">
+          <tr>
+            <td style="width:50%; text-align:center; border:none !important;">
+              <div>Yogyakarta, ${tglCetak}</div>
+              <div style="margin-top:4px;">Mengetahui, Bidang Magang</div>
+              <div style="height:100px;"></div>
+              <div style="border-bottom:1px solid #000; width:160px; margin:0 auto;"></div>
+            </td>
+            <td style="width:50%; text-align:center; border:none !important;">
+              <div>Yogyakarta, ${tglCetak}</div>
+              <div style="margin-top:4px;">Mengetahui, Bidang SDM</div>
+              <div style="height:100px;"></div>
+              <div style="font-weight:bold; text-decoration:underline; margin-bottom:2px;">Gus Munir, M.A</div>
+              <div style="border-bottom:1px solid #000; width:160px; margin:0 auto;"></div>
+            </td>
+          </tr>
+        </table>
+    <div style="position:fixed; bottom:0; left:0; width:100%; font-size:10px; text-align:center; padding:10px 0;">
+      <b>Kantor:</b><br>
+      Jalan Kenari No 56 Komplek Balai kota Yogyakarta<br>
+      Phone: 081 393 121 121 Fax. (0274) 549754<br>
+      Email: baznaskota.yogyakarta@baznas.go.id, Website: www.baznas.jogjakota.go.id
+    </div>
+      </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          }, 300);
+        };
+      <\/script>
+    </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
+function hapusDataTerfilter() {
+  const nameFilter = document.getElementById("nameFilter").value.trim();
+  const kampusFilter = document.getElementById("kampusFilter").value.trim();
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+
+  const jumlahData = filteredData.length;
+  if (jumlahData === 0) {
+    showPopupInfo("Tidak ada data yang terfilter.");
+    return;
+  }
+
+  deletePresensiFilter = { nameFilter, kampusFilter, startDate, endDate };
+
+  let filterDetail = [];
+  if (nameFilter) filterDetail.push("Nama: " + nameFilter);
+  if (kampusFilter) filterDetail.push("Kampus: " + kampusFilter);
+  if (startDate) filterDetail.push("Dari: " + startDate);
+  if (endDate) filterDetail.push("Sampai: " + endDate);
+
+  let msg = "Hapus " + jumlahData + " data presensi";
+  msg += filterDetail.length > 0
+    ? "<br><br><b>Filter:</b><br>" + filterDetail.join("<br>")
+    : "<br><br>(Semua data)";
+
+  document.getElementById("deletePresensiText").innerHTML = msg;
+  document.getElementById("popupDeletePresensi").style.display = "flex";
+}
+
+function tutupDeletePresensi() {
+  document.getElementById("popupDeletePresensi").style.display = "none";
+  deletePresensiFilter = null;
+}
+
+document.getElementById("btnConfirmDeletePresensi").addEventListener("click", function(){
+  if (!deletePresensiFilter) return;
+
+  document.getElementById("popupDeletePresensi").style.display = "none";
+  document.getElementById("loading").style.display = "flex";
+  document.querySelector("#loading p").textContent = "Menghapus data...";
+
+  fetch(API_URL + "?action=hapusPresensiBatch", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(deletePresensiFilter)
+  })
+    .then(res => res.json())
+    .then(result => {
+      document.getElementById("loading").style.display = "none";
+      if (result.success) {
+        alert(result.message);
+        document.getElementById("nameFilter").value = "";
+        document.getElementById("kampusFilter").value = "";
+        document.getElementById("startDate").value = "";
+        document.getElementById("endDate").value = "";
+        loadData();
+      } else {
+        showPopupInfo("Gagal: " + result.message);
+      }
+    })
+    .catch(error => {
+      document.getElementById("loading").style.display = "none";
+      showPopupInfo("Gagal: " + error.message);
+    });
+});
+
+function showPopupInfo(text){
+  document.getElementById("popupInfoText").innerText = text;
+  document.getElementById("popupInfo").style.display = "flex";
+}
+function tutupPopupInfo(){
+  document.getElementById("popupInfo").style.display = "none";
+}
+</script>
+
+</body>
+</html>
