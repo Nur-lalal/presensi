@@ -185,7 +185,7 @@ img { max-width:80px; cursor:pointer; }
   <button onclick="hapusDataTerfilter()" class="btn btn-red">
     <i class="bi bi-trash"></i> Hapus Data
   </button>
-  <a href="/login.html" class="btn btn-red">
+  <a href="#" onclick="logout(); return false;" class="btn btn-red">
     <i class="bi bi-box-arrow-right"></i> Logout
   </a>
 </div>
@@ -240,9 +240,43 @@ let filteredData = [];
 let deletePresensiFilter = null;
 
 window.onload = function(){
-  loadData();
-  loadJumlahMahasiswa();
+  cekSesi();
 };
+
+function cekSesi(){
+  const token = localStorage.getItem("admin_token");
+  if(!token){
+    window.location.href = "login.html";
+    return;
+  }
+
+  fetch(API_URL + "?action=verifySession&token=" + encodeURIComponent(token))
+    .then(res => res.json())
+    .then(result => {
+      if(!result.valid){
+        localStorage.removeItem("admin_token");
+        window.location.href = "login.html";
+        return;
+      }
+      loadData();
+      loadJumlahMahasiswa();
+    })
+    .catch(() => {
+      window.location.href = "login.html";
+    });
+}
+
+function logout(){
+  const token = localStorage.getItem("admin_token");
+  fetch(API_URL + "?action=logoutSession", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ token })
+  }).finally(() => {
+    localStorage.removeItem("admin_token");
+    window.location.href = "login.html";
+  });
+}
 
 function loadJumlahMahasiswa(){
   fetch(API_URL + "?action=getListNama")
