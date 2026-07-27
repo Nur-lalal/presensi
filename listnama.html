@@ -637,9 +637,31 @@ function bukaPopupNonaktif(){
 function tutupPopupNonaktif(){ document.getElementById("popupNonaktif").style.display = "none"; }
 
 window.onload = function(){
-  loadData();
-  loadKampus();
+  cekSesi();
 };
+
+function cekSesi(){
+  const token = localStorage.getItem("admin_token");
+  if(!token){
+    window.location.href = "login.html";
+    return;
+  }
+
+  fetch(API_URL + "?action=verifySession&token=" + encodeURIComponent(token))
+    .then(res => res.json())
+    .then(result => {
+      if(!result.valid){
+        localStorage.removeItem("admin_token");
+        window.location.href = "login.html";
+        return;
+      }
+      loadData();
+      loadKampus();
+    })
+    .catch(() => {
+      window.location.href = "login.html";
+    });
+}
 </script>
 
 </body>
