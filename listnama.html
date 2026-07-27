@@ -1,1 +1,646 @@
-<h1>test</h1>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola List Nama</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    body{ font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:20px; }
+    h2{ margin-bottom:20px; }
+
+    .card{
+      background:white;
+      padding:20px;
+      border-radius:12px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.08);
+      margin-bottom:20px;
+    }
+
+    input, select{
+      padding:8px;
+      margin-right:10px;
+      border:1px solid #ccc;
+      border-radius:8px;
+      font-size:14px;
+      background:white;
+    }
+
+    button{ padding:8px 14px; border:none; border-radius:8px; cursor:pointer; }
+    .btn-add{ background:#2e7d32; color:white; }
+    .btn-delete{ background:#c62828; color:white; }
+    .btn-edit{ background:#f9a825; color:white; }
+    .btn-print{ background:#1976d2; color:white; }
+    .btn-print:hover{ background:#1565c0; }
+
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ padding:10px; border-bottom:1px solid #ddd; text-align:left; }
+    th{ background:#e8f5e9; }
+
+    .popup{
+      position:fixed; top:0;left:0; width:100%;height:100%;
+      background:rgba(0,0,0,0.4);
+      display:none; align-items:center; justify-content:center; z-index:999;
+    }
+    .popup-box{ background:white; padding:20px; border-radius:12px; width:300px; text-align:center; }
+
+    .back-btn{
+      margin-bottom:20px;
+      display:inline-block;
+      text-decoration:none;
+      background:#1976d2;
+      color:white;
+      padding:8px 14px;
+      border-radius:8px;
+    }
+
+    .popup-box h3{ margin-bottom:10px; }
+    .popup-box p{ font-size:14px; color:#555; }
+    #btnConfirmDelete{ margin-right:10px; }
+
+    .btn-nonaktif{ background:#d32f2f; color:white; }
+    .btn-nonaktif:hover{ background:#b71c1c; }
+
+    .row-nonaktif{ background:#fdecea !important; }
+    .row-nonaktif td{ color:#8d1f1f; }
+
+    .badge-nonaktif{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      background:#d32f2f;
+      color:white;
+      font-size:12px;
+      font-weight:700;
+      margin-left:8px;
+    }
+
+    @keyframes spin { 100% { transform:rotate(360deg); } }
+
+    .loading { 
+      position:fixed; top:0; left:0; width:100%; height:100%; 
+      background:rgba(255,255,255,0.9); 
+      display:none; align-items:center; justify-content:center; 
+      z-index: 9998; flex-direction: column;
+    }
+    .loading i { font-size:3rem; color:#28a745; animation:spin 1s linear infinite; }
+
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .card { width: 100%; padding: 16px; border-radius: 12px; box-sizing: border-box; }
+      .card input, .card select, .card button { width: 100%; margin-bottom: 10px; margin-right: 0; box-sizing: border-box; }
+      .card { overflow-x: auto; }
+      .card > div[style*="display:flex"] { flex-direction: column; align-items: stretch !important; }
+      #searchInput { width: 100% !important; margin-bottom: 10px; }
+      table { font-size: 13px; }
+      th, td { padding: 8px 6px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<a class="back-btn" href="/admin.html">← Kembali ke Dashboard</a>
+
+<h2>Kelola List Nama</h2>
+
+<div style="display:flex; gap:15px; margin-bottom:15px; align-items:center;">
+  <div style="background:white; padding:15px 25px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); border-left:5px solid #2e7d32;">
+    <div style="font-size:13px; color:#666;">Mahasiswa Aktif</div>
+    <div style="font-size:28px; font-weight:bold; color:#2e7d32;" id="cardAktif">-</div>
+  </div>
+  <button class="btn-nonaktif" style="height:fit-content; padding:10px 18px;" onclick="bukaPopupNonaktif()">
+    <i class="bi bi-eye-fill"></i> Lihat Nonaktif (<span id="jumlahNonaktifBtn">0</span>)
+  </button>
+</div>
+
+<div class="card">
+  <h3>Tambah Nama</h3>
+  <input type="text" id="namaBaru" placeholder="Nama">
+  <input type="text" id="nimBaru" placeholder="NIM">
+  <input type="text" id="kampusBaru" list="listKampusTambah" placeholder="Ketik / Pilih Kampus">
+  <input type="text" id="prodiBaru" placeholder="Prodi">
+  <select id="genderBaru">
+    <option value="">Pilih Gender</option>
+    <option value="Laki-laki">Laki-laki</option>
+    <option value="Perempuan">Perempuan</option>
+  </select>
+  <datalist id="listKampusTambah"></datalist>
+  <datalist id="listKampus"></datalist>
+  <button class="btn-add" onclick="tambah()">Tambah</button>
+</div>
+
+<div class="card">
+  <h3>Daftar Nama</h3>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+    <input type="text" id="searchInput" placeholder="Cari nama..." onkeyup="filterTable()" style="width:250px;">
+
+    <div style="display:flex; gap:10px;">
+      <button id="btnGenerateSurat" class="btn-print" style="display:none;" onclick="generateSuratMagang()">
+        <i class="bi bi-file-earmark-pdf-fill"></i> Surat Penerimaan Magang
+      </button>
+      <button id="btnGenerateSuratSelesai" class="btn-print" style="display:none; background:#6a1b9a;" onclick="generateSuratSelesaiMagang()">
+        <i class="bi bi-file-earmark-text-fill"></i> Surat Selesai Magang
+      </button>
+      <button id="btnNonaktifkan" class="btn-nonaktif" style="display:none;" onclick="nonaktifkanMahasiswa()">
+        <i class="bi bi-slash-circle-fill"></i> Nonaktifkan Mahasiswa
+      </button>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th><input type="checkbox" onchange="toggleSelectAll(this)"></th>
+        <th>Nama</th>
+        <th>NIM</th>
+        <th>Kampus</th>
+        <th>Prodi</th>
+        <th>Gender</th>
+        <th>Aksi</th>
+        <th>Cetak</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div id="popup" class="popup">
+  <div class="popup-box">
+    <p id="popupText"></p>
+    <button onclick="tutupPopup()">OK</button>
+  </div>
+</div>
+
+<div id="popupEdit" class="popup">
+  <div class="popup-box" style="width:350px;">
+    <h3>Edit Data</h3>
+    <input type="text" id="editNamaInput" placeholder="Nama"><br><br>
+    <input type="text" id="editNimInput" placeholder="NIM"><br><br>
+    <input type="text" id="editKampusInput" list="listKampus" placeholder="Kampus"><br><br>
+    <input type="text" id="editProdiInput" placeholder="Prodi"><br><br>
+
+    <label style="font-size:12px; color:#666; display:block; text-align:left; margin-left:10px;">Tanggal Mulai Magang:</label>
+    <input type="date" id="editTanggalMulai" style="width:90%;"><br><br>
+
+    <label style="font-size:12px; color:#666; display:block; text-align:left; margin-left:10px;">Tanggal Selesai Magang:</label>
+    <input type="date" id="editTanggalSelesai" style="width:90%;"><br><br>
+
+    <select id="editGenderInput">
+      <option value="">Pilih Gender</option>
+      <option value="Laki-laki">Laki-laki</option>
+      <option value="Perempuan">Perempuan</option>
+    </select>
+    <br><br>
+
+    <button class="btn-edit" onclick="simpanEdit()">Simpan</button>
+    <button onclick="tutupEdit()">Batal</button>
+  </div>
+</div>
+
+<div id="popupDelete" class="popup">
+  <div class="popup-box">
+    <h3 style="margin-top:0;">Hapus Data?</h3>
+    <p>Data ini akan dihapus permanen.</p>
+    <div style="margin-top:20px;">
+      <button id="btnConfirmDelete" class="btn-delete">Ya, Hapus</button>
+      <button onclick="tutupDelete()">Batal</button>
+    </div>
+  </div>
+</div>
+
+<div id="popupNonaktif" class="popup">
+  <div class="popup-box" style="width:90%; max-width:700px; max-height:80vh; overflow-y:auto; text-align:left; padding-top:0;">
+    <div style="position:sticky; top:0; background:white; padding:15px 0 10px 0; z-index:10; text-align:center; border-bottom:1px solid #eee;">
+      <h3 style="margin:0 0 10px 0;">Mahasiswa Nonaktif</h3>
+      <button onclick="tutupPopupNonaktif()" class="btn-delete">Tutup</button>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Nama</th><th>NIM</th><th>Kampus</th><th>Prodi</th></tr>
+      </thead>
+      <tbody id="tableBodyNonaktif"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="loading" id="loading">
+  <i class="bi bi-arrow-repeat"></i>
+  <p style="margin-top:10px;">Loading...</p>
+</div>
+
+<script>
+const API_URL = "AKfycbzXuixBg0SqxgyRrLBwZ-iWhZLzb4qpJmcRrGj8Lpu2Ua-C5pMgpGO2DJrSnwU9xfREzA";
+
+let allData = [];
+let editRowId = null;
+let deleteRowId = null;
+
+function showPopup(text){
+  document.getElementById("popupText").innerText = text;
+  document.getElementById("popup").style.display = "flex";
+}
+function tutupPopup(){ document.getElementById("popup").style.display = "none"; }
+function tutupEdit(){ document.getElementById("popupEdit").style.display = "none"; }
+function showLoading(){ document.getElementById("loading").style.display = "flex"; }
+function hideLoading(){ document.getElementById("loading").style.display = "none"; }
+
+function loadKampus() {
+  fetch(API_URL + "?action=getListKampus")
+    .then(res => res.json())
+    .then(data => {
+      const listEdit = document.getElementById("listKampus");
+      const listTambah = document.getElementById("listKampusTambah");
+      listEdit.innerHTML = "";
+      listTambah.innerHTML = "";
+
+      data.forEach(function(kampus){
+        const option1 = document.createElement("option");
+        option1.value = kampus;
+        listEdit.appendChild(option1);
+
+        const option2 = document.createElement("option");
+        option2.value = kampus;
+        listTambah.appendChild(option2);
+      });
+    });
+}
+
+function loadData(){
+  showLoading();
+  fetch(API_URL + "?action=getListNama")
+    .then(res => res.json())
+    .then(data => {
+      hideLoading();
+      allData = data || [];
+      renderTable(allData);
+      const jumlahNonaktif = allData.filter(item => String(item.status || "").toUpperCase() === "NONAKTIF").length;
+      document.getElementById("jumlahNonaktifBtn").innerText = jumlahNonaktif;
+    })
+    .catch(err => {
+      hideLoading();
+      showPopup("Error: " + err.message);
+    });
+}
+
+function renderTable(data){
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+
+  data = data.filter(item => String(item.status || "").toUpperCase() !== "NONAKTIF");
+  data = data.sort((a, b) => a.nama.toLowerCase().localeCompare(b.nama.toLowerCase(), 'id'));
+
+  document.getElementById("cardAktif").innerText = data.length;
+
+  if(data.length === 0){
+    tbody.innerHTML = "<tr><td colspan='8'>Tidak ada data</td></tr>";
+    return;
+  }
+
+  data.forEach(item => {
+    const nonaktif = String(item.status || "").toUpperCase() === "NONAKTIF";
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td><input type="checkbox" class="rowCheckbox" value="${item.nim}" onchange="handleCheckboxChange()" ${nonaktif ? "disabled" : ""}></td>
+      <td>${item.nama}${nonaktif ? '<span class="badge-nonaktif">NONAKTIF</span>' : ''}</td>
+      <td>${item.nim}</td>
+      <td>${item.kampus}</td>
+      <td>${item.prodi}</td>
+      <td>${item.gender}</td>
+      <td>
+        <button class="btn-edit">Edit</button>
+        <button class="btn-delete">Hapus</button>
+      </td>
+      <td>
+        <button class="btn-print" onclick="cetakPresensi('${item.nama}')">
+          <i class="bi bi-printer-fill"></i> Cetak
+        </button>
+      </td>
+    `;
+
+    tr.querySelector(".btn-edit")
+      .addEventListener("click", () => edit(item.id, item.nama, item.nim, item.kampus, item.prodi, item.gender, item.tanggalMulai, item.tanggalSelesai));
+    tr.querySelector(".btn-delete")
+      .addEventListener("click", () => hapus(item.id));
+
+    if (nonaktif) tr.classList.add("row-nonaktif");
+
+    tbody.appendChild(tr);
+  });
+}
+
+function handleCheckboxChange() {
+  const checked = document.querySelectorAll(".rowCheckbox:checked");
+  const show = checked.length > 0 ? "inline-block" : "none";
+  document.getElementById("btnGenerateSurat").style.display = show;
+  document.getElementById("btnGenerateSuratSelesai").style.display = show;
+  document.getElementById("btnNonaktifkan").style.display = show;
+}
+
+function toggleSelectAll(source) {
+  document.querySelectorAll(".rowCheckbox").forEach(cb => cb.checked = source.checked);
+  handleCheckboxChange();
+}
+
+function nonaktifkanMahasiswa() {
+  const checked = document.querySelectorAll(".rowCheckbox:checked");
+  if (checked.length === 0) { showPopup("Pilih minimal satu data!"); return; }
+
+  const selectedIds = Array.from(checked).map(cb => cb.value);
+  if (!confirm("Yakin nonaktifkan mahasiswa yang dipilih?")) return;
+
+  showLoading();
+  document.querySelector("#loading p").textContent = "Menonaktifkan mahasiswa...";
+
+  fetch(API_URL + "?action=nonaktifkanMahasiswa", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ ids: selectedIds })
+  })
+    .then(res => res.json())
+    .then(result => {
+      hideLoading();
+      showPopup(result.message || "Berhasil dinonaktifkan!");
+      loadData();
+      setTimeout(()=>tutupPopup(),1500);
+    })
+    .catch(err => {
+      hideLoading();
+      showPopup("Gagal nonaktifkan: " + err.message);
+    });
+}
+
+function bukaPrintWindow(html){
+  const old = document.getElementById("printFrame");
+  if (old) old.remove();
+
+  const iframe = document.createElement("iframe");
+  iframe.id = "printFrame";
+  iframe.style.position = "fixed";
+  iframe.style.width = "210mm";
+  iframe.style.height = "297mm";
+  iframe.style.top = "-10000px";
+  iframe.style.left = "-10000px";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  function cobaPrint(){
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch(e) { console.error("Print gagal:", e); }
+  }
+
+  const images = doc.images;
+  let loaded = 0;
+  const total = images.length;
+
+  if (total === 0) {
+    setTimeout(cobaPrint, 300);
+  } else {
+    Array.from(images).forEach(img => {
+      if (img.complete) {
+        loaded++;
+        if (loaded === total) setTimeout(cobaPrint, 200);
+      } else {
+        img.onload = img.onerror = function(){
+          loaded++;
+          if (loaded === total) setTimeout(cobaPrint, 200);
+        };
+      }
+    });
+  }
+}
+
+function generateSuratMagang() {
+  const checked = document.querySelectorAll(".rowCheckbox:checked");
+  if (checked.length === 0) { showPopup("Pilih minimal satu data!"); return; }
+  const selectedIds = Array.from(checked).map(cb => cb.value);
+
+  showLoading();
+  document.querySelector("#loading p").textContent = "Menyiapkan surat...";
+
+  fetch(API_URL + "?action=generateSuratPenerimaanMagang", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ ids: selectedIds })
+  })
+    .then(res => res.json())
+    .then(result => {
+      hideLoading();
+      if (result.success) bukaPrintWindow(result.html);
+      else showPopup(result.message);
+    })
+    .catch(err => { hideLoading(); showPopup(err.message); });
+}
+
+function generateSuratSelesaiMagang() {
+  const checked = document.querySelectorAll(".rowCheckbox:checked");
+  if (checked.length === 0) { showPopup("Pilih minimal satu data!"); return; }
+  const selectedIds = Array.from(checked).map(cb => cb.value);
+
+  showLoading();
+  document.querySelector("#loading p").textContent = "Menyiapkan surat...";
+
+  fetch(API_URL + "?action=generateSuratSelesaiMagang", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ ids: selectedIds })
+  })
+    .then(res => res.json())
+    .then(result => {
+      hideLoading();
+      if (result.success) bukaPrintWindow(result.html);
+      else showPopup(result.message);
+    })
+    .catch(err => { hideLoading(); showPopup(err.message); });
+}
+
+function cetakPresensi(nama) {
+  showLoading();
+  document.querySelector("#loading p").textContent = "Menyiapkan cetak...";
+
+  fetch(API_URL + "?action=generatePresensiByNama", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ nama: nama })
+  })
+    .then(res => res.json())
+    .then(result => {
+      hideLoading();
+      if (result.success) bukaPrintWindow(result.html);
+      else showPopup("Gagal generate laporan: " + result.message);
+    })
+    .catch(error => {
+      hideLoading();
+      showPopup("Gagal generate laporan: " + error.message);
+      console.error(error);
+    });
+}
+
+function filterTable(){
+  const keyword = document.getElementById("searchInput").value.toLowerCase();
+  const filtered = allData.filter(item =>
+    item.nama.toLowerCase().includes(keyword) ||
+    item.kampus.toLowerCase().includes(keyword)
+  );
+  renderTable(filtered);
+}
+
+function tambah(){
+  const nama = document.getElementById("namaBaru").value.trim();
+  const nim = document.getElementById("nimBaru").value.trim();
+  const kampus = document.getElementById("kampusBaru").value.trim();
+  const prodi = document.getElementById("prodiBaru").value.trim();
+  const gender = document.getElementById("genderBaru").value.trim();
+
+  if(!nama || !nim || !kampus || !prodi || !gender){
+    showPopup("Data wajib diisi!");
+    return;
+  }
+
+  fetch(API_URL + "?action=tambahListNama", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ nama, nim, kampus, prodi, gender })
+  })
+    .then(res => res.json())
+    .then(result => {
+      if (result.success === false) {
+        showPopup(result.message);
+        return;
+      }
+      showPopup("Berhasil tambah!");
+      document.getElementById("namaBaru").value="";
+      document.getElementById("nimBaru").value="";
+      document.getElementById("kampusBaru").value="";
+      document.getElementById("prodiBaru").value="";
+      document.getElementById("genderBaru").value="";
+      loadData();
+      loadKampus();
+      setTimeout(()=>tutupPopup(),1500);
+    })
+    .catch(err => showPopup(err.message));
+}
+
+function hapus(id){
+  deleteRowId = id;
+  document.getElementById("popupDelete").style.display = "flex";
+}
+function tutupDelete(){
+  document.getElementById("popupDelete").style.display = "none";
+  deleteRowId = null;
+}
+
+document.getElementById("btnConfirmDelete").addEventListener("click", function(){
+  if(!deleteRowId) return;
+
+  fetch(API_URL + "?action=hapusListNama", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ rowId: deleteRowId })
+  })
+    .then(res => res.json())
+    .then(() => {
+      tutupDelete();
+      showPopup("Berhasil dihapus!");
+      loadData();
+      loadKampus();
+      setTimeout(()=>tutupPopup(),1500);
+    })
+    .catch(() => {
+      tutupDelete();
+      showPopup("Gagal hapus");
+    });
+});
+
+function edit(rowId, nama, nim, kampus, prodi, gender, tanggalMulai, tanggalSelesai){
+  editRowId = rowId;
+  document.getElementById("editNamaInput").value = nama;
+  document.getElementById("editNimInput").value = nim;
+  document.getElementById("editKampusInput").value = kampus;
+  document.getElementById("editProdiInput").value = prodi;
+  document.getElementById("editGenderInput").value = gender;
+  document.getElementById("editTanggalMulai").value = tanggalMulai || "";
+  document.getElementById("editTanggalSelesai").value = tanggalSelesai || "";
+  document.getElementById("popupEdit").style.display = "flex";
+}
+
+function simpanEdit(){
+  const namaBaru = document.getElementById("editNamaInput").value.trim();
+  const nimBaru = document.getElementById("editNimInput").value.trim();
+  const kampusBaru = document.getElementById("editKampusInput").value.trim();
+  const prodiBaru = document.getElementById("editProdiInput").value.trim();
+  const genderBaru = document.getElementById("editGenderInput").value.trim();
+  const tanggalMulai = document.getElementById("editTanggalMulai").value;
+  const tanggalSelesai = document.getElementById("editTanggalSelesai").value;
+
+  if(!namaBaru || !nimBaru || !kampusBaru || !prodiBaru || !genderBaru){
+    showPopup("Semua field wajib diisi!");
+    return;
+  }
+
+  fetch(API_URL + "?action=editNama", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({
+      row: editRowId,
+      namaBaru, nimBaru, kampusBaru, prodiBaru, genderBaru,
+      tanggalMulai, tanggalSelesai
+    })
+  })
+    .then(res => res.json())
+    .then(result => {
+      if (result.success === false) {
+        showPopup(result.message);
+        return;
+      }
+      tutupEdit();
+      showPopup("Berhasil diupdate!");
+      loadData();
+      loadKampus();
+      setTimeout(()=>tutupPopup(),1500);
+    })
+    .catch(err => showPopup(err.message));
+}
+
+function bukaPopupNonaktif(){
+  const nonaktifList = allData.filter(item => String(item.status || "").toUpperCase() === "NONAKTIF");
+  const tbody = document.getElementById("tableBodyNonaktif");
+  tbody.innerHTML = "";
+
+  if(nonaktifList.length === 0){
+    tbody.innerHTML = "<tr><td colspan='4'>Tidak ada data nonaktif</td></tr>";
+  } else {
+    nonaktifList.forEach(item => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${item.nama}</td>
+        <td>${item.nim}</td>
+        <td>${item.kampus}</td>
+        <td>${item.prodi}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById("popupNonaktif").style.display = "flex";
+}
+function tutupPopupNonaktif(){ document.getElementById("popupNonaktif").style.display = "none"; }
+
+window.onload = function(){
+  loadData();
+  loadKampus();
+};
+</script>
+
+</body>
+</html>
