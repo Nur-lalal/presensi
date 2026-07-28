@@ -61,7 +61,8 @@
 
     .btn-nonaktif{ background:#d32f2f; color:white; }
     .btn-nonaktif:hover{ background:#b71c1c; }
-
+    .btn-reset-device{ background:#607d8b; color:white; }
+    .btn-reset-device:hover{ background:#455a64; }
     .row-nonaktif{ background:#fdecea !important; }
     .row-nonaktif td{ color:#8d1f1f; }
 
@@ -313,6 +314,7 @@ function renderTable(data){
       <td>
         <button class="btn-edit">Edit</button>
         <button class="btn-delete">Hapus</button>
+        <button class="btn-reset-device">Reset Device</button>
       </td>
       <td>
         <button class="btn-print" onclick="cetakPresensi('${item.nama}')">
@@ -325,6 +327,8 @@ function renderTable(data){
       .addEventListener("click", () => edit(item.id, item.nama, item.nim, item.kampus, item.prodi, item.gender, item.tanggalMulai, item.tanggalSelesai));
     tr.querySelector(".btn-delete")
       .addEventListener("click", () => hapus(item.id));
+    tr.querySelector(".btn-reset-device")
+      .addEventListener("click", () => resetDevice(item.nim, item.nama));
 
     if (nonaktif) tr.classList.add("row-nonaktif");
 
@@ -561,6 +565,27 @@ document.getElementById("btnConfirmDelete").addEventListener("click", function()
       showPopup("Gagal hapus");
     });
 });
+
+function resetDevice(nim, nama){
+  if(!confirm('Reset kunci perangkat untuk "' + nama + '"?\n\nHP mereka akan otomatis terbuka lagi dan bisa dipakai memilih nama (termasuk nama lain).')) return;
+
+  showLoading();
+  fetch(API_URL + "?action=resetDeviceId", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ nim: nim })
+  })
+    .then(res => res.json())
+    .then(result => {
+      hideLoading();
+      showPopup(result.message || "Selesai diproses");
+      setTimeout(()=>tutupPopup(),1500);
+    })
+    .catch(err => {
+      hideLoading();
+      showPopup("Gagal reset: " + err.message);
+    });
+}
 
 function edit(rowId, nama, nim, kampus, prodi, gender, tanggalMulai, tanggalSelesai){
   editRowId = rowId;
