@@ -225,8 +225,7 @@
     </div>
 
     <div id="deviceLockInfo" style="display:none;">
-      Perangkat ini terkunci untuk: <b id="lockedNamaText"></b><br>
-      <a href="#" onclick="resetDeviceLock(); return false;" style="color:#c62828; font-size:12px;">Bukan Anda? Reset perangkat</a>
+      Perangkat ini terkunci untuk: <b id="lockedNamaText"></b>
     </div>
 
     <div id="statusBox" style="display:none; margin-bottom:15px; padding:12px; background:#f0f0f0; border-radius:8px; font-weight:bold; color:#333;"></div>
@@ -309,12 +308,7 @@ function tampilkanInfoDeviceLock(nama){
   document.getElementById("deviceLockInfo").style.display = "block";
   namaInput.style.display = "none";
 }
-function resetDeviceLock(){
-  if(confirm("Yakin reset kunci perangkat ini? Perangkat akan bisa dipakai untuk nama lain.")){
-    clearDeviceLock();
-    location.reload();
-  }
-}
+
 function terapkanNamaTerpilih(obj){
   namaTerpilih = obj.nama;
   document.getElementById("infoNama").innerText = obj.nama;
