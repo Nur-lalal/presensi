@@ -224,8 +224,9 @@
       <div class="jenis-keterangan" id="jenisKeterangan">Wajib berada dalam radius kantor BAZNAS.</div>
     </div>
 
-    <div id="deviceLockInfo" style="display:none;">
+    <div id="deviceLockInfo" style="display:none; position:relative;">
       Perangkat ini terkunci untuk: <b id="lockedNamaText"></b>
+      <span onclick="mintaPinReset()" style="position:absolute; top:6px; right:8px; cursor:pointer; font-size:14px; opacity:0.5;" title="Reset (admin only)">🔒</span>
     </div>
 
     <div id="statusBox" style="display:none; margin-bottom:15px; padding:12px; background:#f0f0f0; border-radius:8px; font-weight:bold; color:#333;"></div>
@@ -318,6 +319,21 @@ function getDeviceLock(){
 function setDeviceLock(data){ localStorage.setItem(DEVICE_LOCK_KEY, JSON.stringify(data)); }
 function clearDeviceLock(){ localStorage.removeItem(DEVICE_LOCK_KEY); }
 
+const ADMIN_RESET_PIN = "1234"; // ganti sesuai mau kamu, angka bebas
+
+function mintaPinReset(){
+  const pin = prompt("Masukkan kode admin untuk reset perangkat ini:");
+  if (pin === null) return; // dibatalkan
+
+  if (pin === ADMIN_RESET_PIN) {
+    clearDeviceLock();
+    alert("Perangkat berhasil direset.");
+    location.reload();
+  } else {
+    alert("Kode salah.");
+  }
+}
+  
 function tampilkanInfoDeviceLock(nama){
   document.getElementById("lockedNamaText").innerText = nama;
   document.getElementById("deviceLockInfo").style.display = "block";
