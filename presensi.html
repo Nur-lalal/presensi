@@ -319,7 +319,7 @@ function getDeviceLock(){
 function setDeviceLock(data){ localStorage.setItem(DEVICE_LOCK_KEY, JSON.stringify(data)); }
 function clearDeviceLock(){ localStorage.removeItem(DEVICE_LOCK_KEY); }
 
-const ADMIN_RESET_PIN = "1234"; // ganti sesuai mau kamu, angka bebas
+const ADMIN_RESET_PIN = "0987"; // ganti sesuai mau kamu, angka bebas
 
 function mintaPinReset(){
   const pin = prompt("Masukkan kode admin untuk reset perangkat ini:");
