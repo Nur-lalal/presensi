@@ -99,10 +99,8 @@ document.getElementById("loginForm").addEventListener("submit", function(e){
   const password = document.getElementById("password").value.trim();
 
   const errorDiv = document.getElementById("error");
-  const successLink = document.getElementById("successLink");
 
   errorDiv.innerText = "";
-  successLink.classList.add("hidden");
 
 fetch(API_URL + "?action=verifyLogin", {
   method: "POST",
