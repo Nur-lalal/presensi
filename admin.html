@@ -497,71 +497,64 @@ function _doGenerateReport(assets) {
     filterTitle = "Rekap Seluruh Data Presensi";
   }
 
-  let rows = "";
-  filteredData.forEach((p, i) => {
-    const tanggal = p.Tanggal || "";
-    const jamMasuk = p['Jam Masuk'] || "-";
-    const jamKeluar = p['Jam Keluar'] || "-";
+  // ================= PAGINATION: 30 DATA PER HALAMAN =================
+  const ROWS_PER_PAGE = 30;
+  const pages = [];
+  for (let i = 0; i < filteredData.length; i += ROWS_PER_PAGE) {
+    pages.push(filteredData.slice(i, i + ROWS_PER_PAGE));
+  }
 
-    let jamMasukBg = "";
-    if (p['Jam Masuk']) {
-      const parts = String(p['Jam Masuk']).split(":");
-      if (parts.length >= 2) {
-        const jam = parseInt(parts[0]);
-        const menit = parseInt(parts[1]);
-        if (!isNaN(jam) && !isNaN(menit) && (jam > 7 || (jam === 7 && menit > 30))) {
-          jamMasukBg = "#e6b8b8";
-        }
-      }
-    }
-
-    rows += `
-      <tr>
-        <td style="padding:3px;">${i + 1}</td>
-        <td style="padding:3px;">${tanggal}</td>
-        <td style="padding:3px;">${p.Nama || ""}</td>
-        <td style="padding:3px;">${p.Kampus || ""}</td>
-        <td style="padding:0;"><div style="background:${jamMasukBg};padding:3px;">${jamMasuk}</div></td>
-        <td style="padding:3px;">${jamKeluar}</td>
-      </tr>
-    `;
-  });
-
-  const logoHtml = assets.logo ? `<img src="${assets.logo}" style="width:75px; display:block; margin:0 auto 6px auto;">` : "";
+  const logoHtml = assets.logo ? `<img src="${assets.logo}" style="width:110px; display:block; margin:0 auto 8px auto;">` : "";
   const bgTopHtml = assets.bgTop ? `<img src="${assets.bgTop}" style="position:fixed;top:0;left:0;width:100px;z-index:-1;">` : "";
   const bgBottomHtml = assets.bgBottom ? `<img src="${assets.bgBottom}" style="position:fixed;top:0;right:0;width:100px;z-index:-1;transform:scaleY(-1);">` : "";
 
   const now = new Date();
   const tglCetak = String(now.getDate()).padStart(2, '0') + "/" + String(now.getMonth() + 1).padStart(2, '0') + "/" + now.getFullYear();
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <style>
-        @page { margin: 0; }
-        body { margin: 0; font-family: Arial; }
-        table, th, td { border: 1px solid black !important; }
-        table { page-break-inside:auto; }
-        tr { page-break-inside:avoid; page-break-after:auto; }
-        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .sig-table, .sig-table td, .sig-table tr { border: none !important; }
-      </style>
-    </head>
-    <body>
-      ${bgTopHtml}
-      ${bgBottomHtml}
+  let bodyContent = "";
 
-      <div style="position:relative; z-index:1; padding:12px 40px 20px 40px;">
+  pages.forEach((pageRows, pageIndex) => {
+    let rows = "";
+
+    pageRows.forEach((p, i) => {
+      const nomorUrut = pageIndex * ROWS_PER_PAGE + i + 1;
+      const tanggal = p.Tanggal || "";
+      const jamMasuk = p['Jam Masuk'] || "-";
+      const jamKeluar = p['Jam Keluar'] || "-";
+
+      let jamMasukBg = "";
+      if (p['Jam Masuk']) {
+        const parts = String(p['Jam Masuk']).split(":");
+        if (parts.length >= 2) {
+          const jam = parseInt(parts[0]);
+          const menit = parseInt(parts[1]);
+          if (!isNaN(jam) && !isNaN(menit) && (jam > 7 || (jam === 7 && menit > 30))) {
+            jamMasukBg = "#e6b8b8";
+          }
+        }
+      }
+
+      rows += `
+        <tr>
+          <td style="padding:3px;">${nomorUrut}</td>
+          <td style="padding:3px;">${tanggal}</td>
+          <td style="padding:3px;">${p.Nama || ""}</td>
+          <td style="padding:3px;">${p.Kampus || ""}</td>
+          <td style="padding:0;"><div style="background:${jamMasukBg};padding:3px;">${jamMasuk}</div></td>
+          <td style="padding:3px;">${jamKeluar}</td>
+        </tr>
+      `;
+    });
+
+    bodyContent += `
+      <div style="position:relative; z-index:1; padding:12px 40px 70px 40px;">
         <div style="text-align:center; margin-bottom:6px;">
           ${logoHtml}
-          <h2 style="margin:2px 0; font-size:15px;">DAFTAR HADIR</h2>
-          <h3 style="margin:0; font-size:11px; font-weight:normal;">MAHASISWA MAGANG / PKL<br>BAZNAS KOTA YOGYAKARTA</h3>
+          <h2 style="margin:2px 0; font-size:14px;">DAFTAR HADIR</h2>
+          <h3 style="margin:0; font-size:12px; font-weight:normal;">MAHASISWA MAGANG / PKL<br>BAZNAS KOTA YOGYAKARTA</h3>
         </div>
 
-        <div style="margin:10px 0 6px 0; font-size:12px;">${filterTitle}</div>
-        ${detailInfo}
+        ${pageIndex === 0 ? `<div style="margin:10px 0 6px 0; font-size:12px;">${filterTitle}</div>${detailInfo}` : ""}
 
         <table border="1" style="border-collapse:collapse;width:100%;font-size:12px;">
           <tr style="background-color:#C8E6C9;">
@@ -575,29 +568,63 @@ function _doGenerateReport(assets) {
           ${rows}
         </table>
 
-        <table class="sig-table" style="width:100%; margin-top:30px; font-size:12px;">
-          <tr>
-            <td style="width:50%; text-align:center; border:none !important;">
-              <div>Yogyakarta, ${tglCetak}</div>
-              <div style="margin-top:4px;">Mengetahui, Bidang Magang</div>
-              <div style="height:100px;"></div>
-              <div style="border-bottom:1px solid #000; width:160px; margin:0 auto;"></div>
-            </td>
-            <td style="width:50%; text-align:center; border:none !important;">
-              <div>Yogyakarta, ${tglCetak}</div>
-              <div style="margin-top:4px;">Mengetahui, Bidang SDM</div>
-              <div style="height:100px;"></div>
-              <div style="font-weight:bold; text-decoration:underline; margin-bottom:2px;">Gus Munir, M.A</div>
-              <div style="border-bottom:1px solid #000; width:160px; margin:0 auto;"></div>
-            </td>
-          </tr>
-        </table>
-    <div style="position:fixed; bottom:0; left:0; width:100%; font-size:10px; text-align:center; padding:10px 0;">
-      <b>Kantor:</b><br>
-      Jalan Kenari No 56 Komplek Balai kota Yogyakarta<br>
-      Phone: 081 393 121 121 Fax. (0274) 549754<br>
-      Email: baznaskota.yogyakarta@baznas.go.id, Website: www.baznas.jogjakota.go.id
-    </div>
+        ${pageIndex === pages.length - 1 ? `
+        <div class="no-split">
+          <table class="sig-table" style="width:100%; margin-top:30px; font-size:12px;">
+            <tr>
+              <td style="width:50%; text-align:center; border:none !important;">
+                <div>Yogyakarta, ${tglCetak}</div>
+                <div style="margin-top:4px;">Mengetahui, Bidang Magang</div>
+                <div style="height:100px;"></div>
+                <div style="border-bottom:1px solid #000; width:160px; margin:0 auto;"></div>
+              </td>
+              <td style="width:50%; text-align:center; border:none !important;">
+                <div>Yogyakarta, ${tglCetak}</div>
+                <div style="margin-top:4px;">Mengetahui, Bidang SDM</div>
+                <div style="height:100px;"></div>
+                <div style="font-weight:bold; text-decoration:underline; margin-bottom:2px;">Gus Munir, M.A</div>
+                <div style="border-bottom:1px solid #000; width:160px; margin:0 auto;"></div>
+              </td>
+            </tr>
+          </table>
+        </div>
+        ` : ""}
+      </div>
+    `;
+
+    if (pageIndex < pages.length - 1) {
+      bodyContent += `<div class="page-break"></div>`;
+    }
+  });
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        @page { margin: 0; }
+        body { margin: 0; font-family: Arial; font-size:12px; }
+        table, th, td { border: 1px solid black !important; }
+        table { page-break-inside:auto; }
+        tr { page-break-inside:avoid; page-break-after:auto; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .sig-table, .sig-table td, .sig-table tr { border: none !important; }
+        .page-break { page-break-after: always; }
+        .no-split { page-break-inside: avoid; }
+      </style>
+    </head>
+    <body>
+      ${bgTopHtml}
+      ${bgBottomHtml}
+
+      ${bodyContent}
+
+      <div style="position:fixed; bottom:0; left:0; width:100%; font-size:12px; text-align:center; padding:10px 0;">
+        <b>Kantor:</b><br>
+        Jalan Kenari No 56 Komplek Balai kota Yogyakarta<br>
+        Phone: 081 393 121 121 Fax. (0274) 549754<br>
+        Email: baznaskota.yogyakarta@baznas.go.id, Website: www.baznas.jogjakota.go.id
       </div>
 
       <script>
@@ -612,10 +639,16 @@ function _doGenerateReport(assets) {
     </html>
   `;
 
-  const printWindow = window.open('', '_blank');
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  bukaPrintWindow(html);
+}
+
+function bukaPrintWindow(html){
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;width:210mm;height:297mm;top:-10000px;left:-10000px;border:0;";
+  document.body.appendChild(iframe);
+  const doc = iframe.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 500);
 }
 
 function hapusDataTerfilter() {
