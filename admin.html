@@ -251,7 +251,7 @@ function cekSesi(){
   }
 
   fetch(API_URL + "?action=verifySession&token=" + encodeURIComponent(token))
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(result => {
       if(!result.valid){
         localStorage.removeItem("admin_token");
@@ -280,7 +280,7 @@ function logout(){
 
 function loadJumlahMahasiswa(){
   fetch(API_URL + "?action=getListNama")
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(data => {
       const list = data || [];
       const aktif = list.filter(x => String(x.status || "").toUpperCase() !== "NONAKTIF").length;
@@ -324,7 +324,7 @@ function pilihTanggalCepat(){
 function loadData(){
   document.getElementById("loading").style.display="flex";
   fetch(API_URL + "?action=getPresensiData")
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(data => {
       document.getElementById("loading").style.display="none";
       presensiData = data || [];
@@ -336,6 +336,18 @@ function loadData(){
       alert("Error ambil data");
       console.log(err);
     });
+}
+
+function safeJson(res){
+  return res.text().then(text => {
+    try {
+      return JSON.parse(text);
+    } catch(e) {
+      localStorage.removeItem("admin_token");
+      window.location.href = "login.html";
+      return new Promise(() => {}); // stop chain, biarin redirect jalan
+    }
+  });
 }
 
 function populateFilters(){
@@ -438,7 +450,7 @@ function generateReport() {
   document.querySelector("#loading p").textContent = "Menyiapkan laporan...";
 
   fetch(API_URL + "?action=getLogoPresensi")
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(assets => {
       document.getElementById("loading").style.display = "none";
       _doGenerateReport(assets);
@@ -696,7 +708,7 @@ document.getElementById("btnConfirmDeletePresensi").addEventListener("click", fu
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify(deletePresensiFilter)
   })
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(result => {
       document.getElementById("loading").style.display = "none";
       if (result.success) {
