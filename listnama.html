@@ -126,6 +126,15 @@
     <option value="Laki-laki">Laki-laki</option>
     <option value="Perempuan">Perempuan</option>
   </select>
+
+  <select id="bidangBaru">
+    <option value="">Pilih Bidang</option>
+    <option value="Bidang I">Bidang I</option>
+    <option value="Bidang II">Bidang II</option>
+    <option value="Bidang III">Bidang III</option>
+    <option value="Bidang IV">Bidang IV</option>
+  </select>
+
   <datalist id="listKampusTambah"></datalist>
   <datalist id="listKampus"></datalist>
   <button class="btn-add" onclick="tambah()">Tambah</button>
@@ -159,6 +168,7 @@
         <th>Kampus</th>
         <th>Prodi</th>
         <th>Gender</th>
+        <th>Bidang</th>
         <th>Aksi</th>
         <th>Cetak</th>
       </tr>
@@ -210,7 +220,17 @@
     </div>
   </div>
 </div>
-
+<div id="popupCetakBulanan" class="popup">
+  <div class="popup-box" style="width:280px;">
+    <h3 style="margin-top:0;">Cetak Presensi Bulanan</h3>
+    <p style="font-size:13px; color:#666;" id="namaCetakBulananText"></p>
+    <input type="month" id="bulanCetakInput" style="width:100%; padding:8px; border-radius:8px; border:1px solid #ccc; margin-bottom:15px;">
+    <div>
+      <button class="btn-print" onclick="prosesCetakBulanan()">Cetak</button>
+      <button onclick="tutupPopupCetakBulanan()">Batal</button>
+    </div>
+  </div>
+</div>
 <div id="popupNonaktif" class="popup">
   <div class="popup-box" style="width:90%; max-width:700px; max-height:80vh; overflow-y:auto; text-align:left; padding-top:0;">
     <div style="position:sticky; top:0; background:white; padding:15px 0 10px 0; z-index:10; text-align:center; border-bottom:1px solid #eee;">
@@ -310,19 +330,23 @@ function renderTable(data){
       <td>${item.kampus}</td>
       <td>${item.prodi}</td>
       <td>${item.gender}</td>
+      <td>${item.bidang || "-"}</td>
       <td>
         <button class="btn-edit">Edit</button>
         <button class="btn-delete">Hapus</button>
       </td>
       <td>
-        <button class="btn-print" onclick="cetakPresensi('${item.nama}')">
-          <i class="bi bi-printer-fill"></i> Cetak
+        <button class="btn-print" style="margin-bottom:4px; display:block; width:100%;" onclick="bukaPopupCetakBulanan('${item.nama}')">
+          <i class="bi bi-calendar3"></i> Bulanan
+        </button>
+        <button class="btn-print" style="background:#455a64; display:block; width:100%;" onclick="cetakPresensi('${item.nama}')">
+          <i class="bi bi-printer-fill"></i> Semua
         </button>
       </td>
     `;
 
     tr.querySelector(".btn-edit")
-      .addEventListener("click", () => edit(item.id, item.nama, item.nim, item.kampus, item.prodi, item.gender, item.tanggalMulai, item.tanggalSelesai));
+      .addEventListener("click", () => edit(item.id, item.nama, item.nim, item.kampus, item.prodi, item.gender, item.tanggalMulai, item.tanggalSelesai, item.bidang));
     tr.querySelector(".btn-delete")
       .addEventListener("click", () => hapus(item.id));
 
@@ -486,6 +510,54 @@ function cetakPresensi(nama) {
     });
 }
 
+  let namaCetakBulanan = "";
+
+function bukaPopupCetakBulanan(nama){
+  namaCetakBulanan = nama;
+  document.getElementById("namaCetakBulananText").innerText = nama;
+  const now = new Date();
+  document.getElementById("bulanCetakInput").value =
+    now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById("popupCetakBulanan").style.display = "flex";
+}
+
+function tutupPopupCetakBulanan(){
+  document.getElementById("popupCetakBulanan").style.display = "none";
+}
+
+function prosesCetakBulanan(){
+  const bulan = document.getElementById("bulanCetakInput").value; // format yyyy-MM
+  if(!bulan){
+    showPopup("Pilih bulan dulu!");
+    return;
+  }
+
+  const [tahun, bln] = bulan.split("-").map(Number);
+  const startDate = tahun + "-" + String(bln).padStart(2,'0') + "-01";
+  const akhirBulan = new Date(tahun, bln, 0).getDate();
+  const endDate = tahun + "-" + String(bln).padStart(2,'0') + "-" + String(akhirBulan).padStart(2,'0');
+
+  tutupPopupCetakBulanan();
+  showLoading();
+  document.querySelector("#loading p").textContent = "Menyiapkan cetak...";
+
+  fetch(API_URL + "?action=generatePresensiByNama", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ nama: namaCetakBulanan, startDate: startDate, endDate: endDate })
+  })
+    .then(res => res.json())
+    .then(result => {
+      hideLoading();
+      if (result.success) bukaPrintWindow(result.html);
+      else showPopup("Gagal: " + result.message);
+    })
+    .catch(error => {
+      hideLoading();
+      showPopup("Gagal generate laporan: " + error.message);
+    });
+}
+  
 function filterTable(){
   const keyword = document.getElementById("searchInput").value.toLowerCase();
   const filtered = allData.filter(item =>
@@ -501,8 +573,9 @@ function tambah(){
   const kampus = document.getElementById("kampusBaru").value.trim();
   const prodi = document.getElementById("prodiBaru").value.trim();
   const gender = document.getElementById("genderBaru").value.trim();
+  const bidang = document.getElementById("bidangBaru").value.trim();
 
-  if(!nama || !nim || !kampus || !prodi || !gender){
+  if(!nama || !nim || !kampus || !prodi || !gender || !bidang){
     showPopup("Data wajib diisi!");
     return;
   }
@@ -510,7 +583,7 @@ function tambah(){
   fetch(API_URL + "?action=tambahListNama", {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({ nama, nim, kampus, prodi, gender })
+    body: JSON.stringify({ nama, nim, kampus, prodi, gender, bidang })
   })
     .then(res => res.json())
     .then(result => {
@@ -524,13 +597,14 @@ function tambah(){
       document.getElementById("kampusBaru").value="";
       document.getElementById("prodiBaru").value="";
       document.getElementById("genderBaru").value="";
+      document.getElementById("bidangBaru").value="";
       loadData();
       loadKampus();
       setTimeout(()=>tutupPopup(),1500);
     })
     .catch(err => showPopup(err.message));
 }
-
+  
 function hapus(id){
   deleteRowId = id;
   document.getElementById("popupDelete").style.display = "flex";
@@ -583,7 +657,7 @@ function resetDevice(nim, nama){
     });
 }
 
-function edit(rowId, nama, nim, kampus, prodi, gender, tanggalMulai, tanggalSelesai){
+function edit(rowId, nama, nim, kampus, prodi, gender, tanggalMulai, tanggalSelesai, bidang){
   editRowId = rowId;
   document.getElementById("editNamaInput").value = nama;
   document.getElementById("editNimInput").value = nim;
@@ -592,6 +666,7 @@ function edit(rowId, nama, nim, kampus, prodi, gender, tanggalMulai, tanggalSele
   document.getElementById("editGenderInput").value = gender;
   document.getElementById("editTanggalMulai").value = tanggalMulai || "";
   document.getElementById("editTanggalSelesai").value = tanggalSelesai || "";
+  document.getElementById("editBidangInput").value = bidang || "";
   document.getElementById("popupEdit").style.display = "flex";
 }
 
@@ -603,6 +678,7 @@ function simpanEdit(){
   const genderBaru = document.getElementById("editGenderInput").value.trim();
   const tanggalMulai = document.getElementById("editTanggalMulai").value;
   const tanggalSelesai = document.getElementById("editTanggalSelesai").value;
+  const bidangBaru = document.getElementById("editBidangInput").value.trim();
 
   if(!namaBaru || !nimBaru || !kampusBaru || !prodiBaru || !genderBaru){
     showPopup("Semua field wajib diisi!");
@@ -615,7 +691,7 @@ function simpanEdit(){
     body: JSON.stringify({
       row: editRowId,
       namaBaru, nimBaru, kampusBaru, prodiBaru, genderBaru,
-      tanggalMulai, tanggalSelesai
+      tanggalMulai, tanggalSelesai, bidangBaru
     })
   })
     .then(res => res.json())
@@ -632,7 +708,7 @@ function simpanEdit(){
     })
     .catch(err => showPopup(err.message));
 }
-
+  
 function bukaPopupNonaktif(){
   const nonaktifList = allData.filter(item => String(item.status || "").toUpperCase() === "NONAKTIF");
   const tbody = document.getElementById("tableBodyNonaktif");
