@@ -381,10 +381,9 @@ function applyFilter(){
     return match;
   });
 
-  filteredData.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
+  filteredData.sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal));
   renderTable();
 }
-
 function renderTable(){
   const tbody = document.getElementById("tableBody");
   tbody.innerHTML = "";
