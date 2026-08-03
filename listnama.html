@@ -277,9 +277,21 @@ function tutupEdit(){ document.getElementById("popupEdit").style.display = "none
 function showLoading(){ document.getElementById("loading").style.display = "flex"; }
 function hideLoading(){ document.getElementById("loading").style.display = "none"; }
 
+function safeJson(res){
+  return res.text().then(text => {
+    try {
+      return JSON.parse(text);
+    } catch(e) {
+      localStorage.removeItem("admin_token");
+      window.location.href = "login.html";
+      return new Promise(() => {}); // stop chain, biarin redirect jalan
+    }
+  });
+}
+  
 function loadKampus() {
   fetch(API_URL + "?action=getListKampus")
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(data => {
       const listEdit = document.getElementById("listKampus");
       const listTambah = document.getElementById("listKampusTambah");
@@ -301,7 +313,7 @@ function loadKampus() {
 function loadData(){
   showLoading();
   fetch(API_URL + "?action=getListNama")
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(data => {
       hideLoading();
       allData = data || [];
@@ -394,7 +406,7 @@ function nonaktifkanMahasiswa() {
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify({ ids: selectedIds })
   })
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(result => {
       hideLoading();
       showPopup(result.message || "Berhasil dinonaktifkan!");
@@ -467,7 +479,7 @@ function generateSuratMagang() {
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify({ ids: selectedIds })
   })
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(result => {
       hideLoading();
       if (result.success) bukaPrintWindow(result.html);
@@ -489,7 +501,7 @@ function generateSuratSelesaiMagang() {
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify({ ids: selectedIds })
   })
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(result => {
       hideLoading();
       if (result.success) bukaPrintWindow(result.html);
@@ -507,7 +519,7 @@ function cetakPresensi(nama) {
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify({ nama: nama })
   })
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(result => {
       hideLoading();
       if (result.success) bukaPrintWindow(result.html);
@@ -556,7 +568,7 @@ function prosesCetakBulanan(){
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify({ nama: namaCetakBulanan, startDate: startDate, endDate: endDate })
   })
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(result => {
       hideLoading();
       if (result.success) bukaPrintWindow(result.html);
@@ -595,7 +607,7 @@ function tambah(){
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify({ nama, nim, kampus, prodi, gender, bidang })
   })
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(result => {
       if (result.success === false) {
         showPopup(result.message);
@@ -632,7 +644,7 @@ document.getElementById("btnConfirmDelete").addEventListener("click", function()
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify({ rowId: deleteRowId })
   })
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(() => {
       tutupDelete();
       showPopup("Berhasil dihapus!");
@@ -655,7 +667,7 @@ function resetDevice(nim, nama){
     headers: { "Content-Type": "text/plain" },
     body: JSON.stringify({ nim: nim })
   })
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(result => {
       hideLoading();
       showPopup(result.message || "Selesai diproses");
@@ -704,7 +716,7 @@ function simpanEdit(){
       tanggalMulai, tanggalSelesai, bidangBaru
     })
   })
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(result => {
       if (result.success === false) {
         showPopup(result.message);
@@ -755,7 +767,7 @@ function cekSesi(){
   }
 
   fetch(API_URL + "?action=verifySession&token=" + encodeURIComponent(token))
-    .then(res => res.json())
+    .then(res => safeJson(res))
     .then(result => {
       if(!result.valid){
         localStorage.removeItem("admin_token");
